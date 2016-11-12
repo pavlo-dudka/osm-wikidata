@@ -17,7 +17,7 @@
   function openInJosm(type, id, val)
   {
     var xmlhttp = new XMLHttpRequest();
-          xmlhttp.open('GET', 'http://localhost:8111/load_object?new_layer=false&objects=' + type.substr(0, 1) + id + '&addtags=wikidata=' + val, false);
+          xmlhttp.open('GET', 'https://localhost:8112/load_object?new_layer=false&objects=' + type.substr(0, 1) + id + '&addtags=wikidata=' + val, false);
           xmlhttp.send(null);
   }
 
