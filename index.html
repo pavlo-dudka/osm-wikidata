@@ -24,7 +24,7 @@
   function loadData()
   {
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open('GET', 'http://overpass-api.de/api/interpreter?data=' + document.getElementById('query').value, false);
+    xmlhttp.open('GET', 'https://overpass-api.de/api/interpreter?data=' + document.getElementById('query').value, false);
 
     xmlhttp.send(null);
     var items = eval('(' + xmlhttp.responseText + ')');
