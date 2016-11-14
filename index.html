@@ -14,6 +14,16 @@
 <button onclick="loadData()">Load Wikidata</button>
 </body>
 <script type="text/javascript">
+  window.onload = function() {
+    var cookie = document.cookie;
+    if (cookie !== "")
+      document.getElementById('query').value = decodeURIComponent(cookie);
+  }
+
+  window.onunload = function() {
+    document.cookie = encodeURIComponent(document.getElementById('query').value);
+  }
+ 
   function openInJosm(type, id, val)
   {
     var xmlhttp = new XMLHttpRequest();
