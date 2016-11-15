@@ -68,8 +68,8 @@
           var lang = item.tags.wikipedia.substr(0, 2);;
           var topic = item.tags.wikipedia.replace('’', '\'').substr(3);
 
-		  var innerHTML = '';
-          innerHTML += '<tr><td><a href="http://openstreetmap.org/' + item.type + '/' + item.id + '"/>' + item.id + '</a></td>';
+          var innerHTML = '';
+          innerHTML += '<tr><td><a href="http://openstreetmap.org/' + item.type + '/' + item.id + '">' + item.id + '</a></td>';
           innerHTML += '<td>' + item.tags.name + '</td>';
           innerHTML += '<td><a href="http://' + lang + '.wikipedia.org/wiki/' + topic +'">' + topic + '</a></td>';
           innerHTML += '<td id="' + item.id + 'wd"></td>';
@@ -89,10 +89,10 @@
             recordsCountLoaded++;
       	    for(var entity in data.entities)
       	    {
-			  if (data.entities[entity].id === undefined)
-			    continue;
+              if (data.entities[entity].id === undefined)
+                continue;
 				
-			  var wikidataID = data.entities[entity].id;
+              var wikidataID = data.entities[entity].id;
       	      var wikidataLabel;
       	      for (var language in data.entities[entity].labels)
       	      if (data.entities[entity].labels[language].language === lang)
