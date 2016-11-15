@@ -1,3 +1,4 @@
+<html>
 <head>
   <title>OSM Wikipedia Translator</title>
   <style>td { border: 1px solid black; }</style>
@@ -12,6 +13,7 @@
   out tags;
 </textarea>
 <button onclick="loadData()">Load Wikidata</button>
+<span id="progress"></span>
 </body>
 <script type="text/javascript">
   window.onload = function() {
@@ -27,67 +29,95 @@
   function openInJosm(type, id, val)
   {
     var xmlhttp = new XMLHttpRequest();
-          xmlhttp.open('GET', 'https://localhost:8112/load_object?new_layer=false&objects=' + type.substr(0, 1) + id + '&addtags=wikidata=' + val, false);
-          xmlhttp.send(null);
+    xmlhttp.open('GET', 'https://localhost:8112/load_object?new_layer=false&objects=' + type.substr(0, 1) + id + '&addtags=wikidata=' + val, false);
+    xmlhttp.send(null);
   }
 
+  var recordsCount = 0, recordsCountLoaded = 0;
+  var osmLoading = false;
   function loadData()
   {
-    var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open('GET', 'https://overpass-api.de/api/interpreter?data=' + document.getElementById('query').value, false);
-
-    xmlhttp.send(null);
-    var items = eval('(' + xmlhttp.responseText + ')');
-
     var table = document.getElementById('table');
     if (table != null)
       document.body.removeChild(table);
-
-    table = document.createElement('table');
-    table.setAttribute('id', 'table');
-
-    var innerHTML = '<tr><th>osm id</th><th>osm name</th><th>wikipedia</th><th>wikidata</th></tr>';
+    document.getElementById("progress").innerHTML = "Loading data from OSM";
+    document.body.style.cursor = "wait";
     
-    for (var i=0; i < items.elements.length; i++)
-    {
-      var item = items.elements[i];
-      if (item.tags.wikipedia === undefined)
-        continue;
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open('GET', 'https://overpass-api.de/api/interpreter?data=' + document.getElementById('query').value, false);
 
-      var lang = item.tags.wikipedia.substr(0,2);;
-      var topic = item.tags.wikipedia.replace("’","'").substr(3);
+    osmLoading = true;
+    xmlhttp.onload = function(e) {
+      document.getElementById("progress").innerHTML = "Loading data from Wikidata";
+    
+      var items = eval('(' + xmlhttp.responseText + ')');
+	  recordsCount = items.elements.length;
+      recordsCountLoaded = 0;
+	  osmLoading = false;
 
-      innerHTML += '<tr><td><a href="http://openstreetmap.org/' + item.type + '/' + item.id + '"/>' + item.id + '</a></td>';
-      innerHTML += '<td>' + item.tags.name + '</td>';
-      innerHTML += '<td><a href="http://' + lang + '.wikipedia.org/wiki/' + topic +'">' + topic + '</a></td>';
-      innerHTML += '<td id="' + item.id + 'wd"></td>';
-      innerHTML += '</tr>';
+      table = document.createElement('table');
+      table.setAttribute('id', 'table');
 
-      var script = document.createElement('script');
-      script.innerHTML = 'var mycallback' + item.id + ' = function(data)' +
-        '{' +
-          'for(var entity in data.entities) {' +
-            'document.getElementById("' + item.id + 'wd").innerHTML = \'<input type="button" value="Add" onClick="openInJosm(\\\'' + item.type + '\\\',' + item.id + ',\\\'\' + data.entities[entity].id + \'\\\')"/> <a href="https://www.wikidata.org/wiki/\'+data.entities[entity].id+\'">\' + data.entities[entity].id + \' / \' + data.entities[entity].labels.' + lang + '.value + \'</a>\';' +
-        '}}';
-      document.head.appendChild(script);
-
-      var url = 'https://wikidata.org/w/api.php?action=wbgetentities' + 
-        '&sites=' + lang + 'wiki' +
-        '&titles=' + topic +
-        '&languages=' + lang +
-        '&props=labels' + 
-        '&format=json' +
-        '&callback=mycallback' + item.id;
+      var innerHTML = '<tr><th>osm id</th><th>osm name</th><th>wikipedia</th><th>wikidata</th></tr>';      
       
-      script = document.createElement('script');
-      script.src = url;
-      document.head.appendChild(script);
-    }  
-    
-    table.innerHTML = innerHTML;
+      for (var i=0; i < items.elements.length; i++)
+      {
+        var item = items.elements[i];
+        if (item.tags.wikipedia === undefined)
+          continue;
+
+        var lang = item.tags.wikipedia.substr(0,2);;
+        var topic = item.tags.wikipedia.replace("’","'").substr(3);
+
+        innerHTML += '<tr><td><a href="http://openstreetmap.org/' + item.type + '/' + item.id + '"/>' + item.id + '</a></td>';
+        innerHTML += '<td>' + item.tags.name + '</td>';
+        innerHTML += '<td><a href="http://' + lang + '.wikipedia.org/wiki/' + topic +'">' + topic + '</a></td>';
+        innerHTML += '<td id="' + item.id + 'wd"></td>';
+        innerHTML += '</tr>';
+
+        var script = document.createElement('script');
+        script.innerHTML = 'var mycallback' + item.id + ' = function(data)' +
+          '{' +
+          '  recordsCountLoaded++;' +
+          '  for(var entity in data.entities) {' +
+          '    document.getElementById("' + item.id + 'wd").innerHTML = \'<input type="button" value="Add" onClick="openInJosm(\\\'' + item.type + '\\\',' + item.id + ',\\\'\' + data.entities[entity].id + \'\\\')"/> <a href="https://www.wikidata.org/wiki/\'+data.entities[entity].id+\'">\' + data.entities[entity].id + \' / \' + data.entities[entity].labels.' + lang + '.value + \'</a>\';' +
+          '  }' +     
+          '}';
+        document.head.appendChild(script);
+
+        var url = 'https://wikidata.org/w/api.php?action=wbgetentities' + 
+          '&sites=' + lang + 'wiki' +
+          '&titles=' + topic +
+          '&languages=' + lang +
+          '&props=labels' + 
+          '&format=json' +
+          '&callback=mycallback' + item.id;
+        
+        script = document.createElement('script');
+        script.src = url;
+        document.head.appendChild(script);
+      }  
+      
+      table.innerHTML = innerHTML;
+      
+      document.body.appendChild(table);
+      
+      document.body.style.cursor = "auto";
+    }
   
-    document.body.appendChild(table);
+    xmlhttp.send(null);
+    
+    var timer = setInterval(function(){
+      if (osmLoading)
+        return;
+    
+      document.getElementById("progress").innerHTML = "Loading data from Wikidata: " + recordsCountLoaded + "/" + recordsCount;
+      if (recordsCountLoaded == recordsCount)
+      {
+        document.getElementById("progress").innerHTML = "";
+        clearInterval(timer);
+      }
+    }, 100);
   }
 </script>    
 </html>
-<!-- http://wikidata.org/w/api.php?action=wbgetentities&sites=dewiki&titles=Ulm&languages=uk|ru&props=labels&format=xml -->
