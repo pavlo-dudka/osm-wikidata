@@ -27,19 +27,14 @@
     window.onunload = function() {
       document.cookie = encodeURIComponent($('#query').val());
     }
-   
-    function openInJosm(type, id, val)
-    {
-      $.ajax({url: 'https://localhost:8112/load_object?new_layer=false&objects=' + type.substr(0, 1) + id + '&addtags=wikidata=' + val});
-    }
 
     function loadData()
     {
       var table = $('#table');
       if (table != null)
         table.remove();
-      $('#progress').html('Loading data from OSM ...');
-      document.body.style.cursor = 'wait';
+      $('#progress').text('Loading data from OSM ...');
+      $('body').css('cursor', 'wait');
       
       var url = 'https://overpass-api.de/api/interpreter?data=' + $('#query').val();
 
@@ -47,7 +42,7 @@
       var osmLoading = true;
       $.ajax({url: url})
       .done(function(items) {
-        $('#progress').html('Loading data from Wikidata ...');
+        $('#progress').text('Loading data from Wikidata ...');
       
         recordsCount = items.elements.length;
         recordsCountLoaded = 0;
@@ -56,14 +51,12 @@
         table = $(document.createElement('table'));
         table.attr('id', 'table');
         table.append('<tr><th>osm id</th><th>osm name</th><th>wikipedia</th><th>wikidata</th></tr>');
-		$(document.body).append($(table));
+        $(document.body).append($(table));
         
-        //for (var i = 0; i < items.elements.length; i++)
-		$.each(items.elements, function(i, item)
-        {
+        $.each(items.elements, function(i, item) {
           var item = items.elements[i];
           if (item.tags.wikipedia === undefined)
-      	    return true;
+            return true;
 
           var lang = item.tags.wikipedia.substr(0, 2);;
           var topic = item.tags.wikipedia.replace('’', '\'').substr(3);
@@ -75,45 +68,52 @@
           innerHTML += '<td id="' + item.id + 'wd"></td>';
           innerHTML += '</tr>';
           table.append(innerHTML);
-		  
+
           var url = 'https://wikidata.org/w/api.php?action=wbgetentities' + 
-      	    '&sites=' + lang + 'wiki' +
-      	    '&titles=' + topic +
-      	    '&languages=' + lang +
-      	    '&props=labels' + 
-      	    '&format=json';
-		  
+            '&sites=' + lang + 'wiki' +
+            '&titles=' + topic +
+            '&languages=' + lang +
+            '&props=labels' + 
+            '&format=json';
+
           $.ajax({url: url, dataType: 'jsonp'})
-      	  .done(function(data)
-      	  {
+          .done(function(data)
+          {
             recordsCountLoaded++;
-      	    for(var entity in data.entities)
-      	    {
+            for(var entity in data.entities)
+            {
               if (data.entities[entity].id === undefined)
                 continue;
-				
+
               var wikidataID = data.entities[entity].id;
-      	      var wikidataLabel;
-      	      for (var language in data.entities[entity].labels)
-      	      if (data.entities[entity].labels[language].language === lang)
-                wikidataLabel = ' / ' + data.entities[entity].labels[language].value;
-      	      $('#' + item.id + 'wd').html('<input type="button" value="Add" onClick="openInJosm(\'' + item.type + '\',' + item.id + ',\'' + wikidataID + '\')"/> '+
-                                           '<a href="https://www.wikidata.org/wiki/' + wikidataID + '">' + wikidataID + wikidataLabel + '</a>');
-      	    }
-      	  });
+              var wikidataLabel = '';
+              for (var language in data.entities[entity].labels)
+              {
+                if (data.entities[entity].labels[language].language === lang)
+                  wikidataLabel = ' / ' + data.entities[entity].labels[language].value;
+              }
+
+              $('#' + item.id + 'wd').html('<button>Add</button> <a href="https://www.wikidata.org/wiki/' + wikidataID + '">' + wikidataID + wikidataLabel + '</a>')
+              .children('button').click(function(){
+                $.ajax({
+                  url: 'https://localhost:8112/load_object?new_layer=false&objects=' + item.type + item.id + '&addtags=wikidata=' + wikidataID
+                });
+              });
+            }
+          });
         });  
-        
-        document.body.style.cursor = 'auto';
       });
        
       var timer = setInterval(function(){
         if (osmLoading)
-        return;
+          return;
       
-        $('#progress').html('Loading data from Wikidata ... ' + recordsCountLoaded + '/' + recordsCount);
+        $('#progress').text('Loading data from Wikidata ... ' + recordsCountLoaded + '/' + recordsCount);
         if (recordsCountLoaded == recordsCount)
         {
-          $('#progress').html(recordsCountLoaded + ' records loaded');
+          $('#progress').text(recordsCountLoaded + ' records loaded');
+          $('body').css('cursor', 'auto');
+
           clearInterval(timer);
         }
       }, 100);
