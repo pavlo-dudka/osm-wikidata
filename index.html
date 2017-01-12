@@ -96,7 +96,7 @@
               $('#' + item.id + 'wd').html('<button>Add</button> <a href="https://www.wikidata.org/wiki/' + wikidataID + '">' + wikidataID + wikidataLabel + '</a>')
               .children('button').click(function(){
                 $.ajax({
-                  url: 'https://localhost:8112/load_object?new_layer=false&objects=' + item.type + item.id + '&addtags=wikidata=' + wikidataID
+                  url: 'https://localhost:8112/load_object?new_layer=false&objects=' + item.type.substr(0, 1) + item.id + '&addtags=wikidata=' + wikidataID
                 });
               });
             }
